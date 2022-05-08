@@ -26,25 +26,6 @@ jobs:
       - destroy-infrastructure:
           stackName: stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
 
-  get_last_deployment_id:
-    docker:
-      - image: amazon/aws-
-    steps:
-      - run:
-          name: get last deployment id from cloudfront
-          command: |
-            aws cloudformation \
-              list-exports --query "Exports[?Name==\`PipelineID\`].Value" \
-              --no-paginate --output text > ~/piplineId.txt
-
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - piplineId.txt
-
-      - destroy-infrastructure:
-          stackName: stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
-
   promote_to_production:
     docker:
       - image: amazon/aws-cli
@@ -61,6 +42,40 @@ jobs:
       - destroy-infrastructure: # destroy s3 that created
           stackName: stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
 
+
+  get_last_deployment_id:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - run:
+          name: get last deployment id from cloudfront
+          command: |
+            aws cloudformation \
+              list-exports --query "Exports[?Name==\`PipelineID\`].Value" \
+              --no-paginate --output text > ~/piplineId.txt
+
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - piplineId.txt
+
+      - destroy-infrastructure:
+          stackName: stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
+
+
+  clean_up_old_front_end:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - run: yum install -y tar gzip
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Destroy the previous S3 bucket and CloudFormation stack.
+          command:
+            export OldBucketID=$(cat ~/piplineId.txt)
+            aws s3 rm "s3://${OldBucketID}" --recursive
+
 workflows:
   createAndDeployFrontend:
     jobs:
@@ -68,3 +83,8 @@ workflows:
       - promote_to_production:
           requires:
             - create_and_deploy_front_end
+      - get_last_deployment_id
+      - clean_up_old_front_end
+          requires:
+            - create_and_deploy_front_end
+            - promote_to_production
