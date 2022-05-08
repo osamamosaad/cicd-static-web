@@ -39,7 +39,8 @@ jobs:
 
       - persist_to_workspace:
           root: ~/
-          paths: piplineId.txt
+          paths:
+            - piplineId.txt
 
       - destroy-infrastructure:
           stackName: stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
@@ -55,7 +56,7 @@ jobs:
             aws cloudformation deploy \
               --template-file cloudfront.yml \
               --stack-name production-distro \
-              --parameter-overrides PipelineID="stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}"
+              --parameter-overrides PipelineID="uda-people-${CIRCLE_WORKFLOW_ID:0:7}"
 
 workflows:
   createAndDeployFrontend:
