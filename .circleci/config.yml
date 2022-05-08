@@ -71,21 +71,23 @@ jobs:
       - run: yum install -y tar gzip
       - attach_workspace:
           at: ~/
-      - run:
-          name: Destroy the previous S3 bucket and CloudFormation stack.
-          command:
-            export OldBucketID=$(cat ~/piplineId.txt)
-            aws s3 rm "s3://${OldBucketID}" --recursive
+      - run: cat ~/piplineId.txt
+      # - run:
+      #     name: Destroy the previous S3 bucket and CloudFormation stack.
+      #     command:
+      #       export OldBucketID=$(cat ~/piplineId.txt)
+      #       aws s3 rm "s3://${OldBucketID}" --recursive
 
 workflows:
   createAndDeployFrontend:
     jobs:
-      - create_and_deploy_front_end
-      - promote_to_production:
-          requires:
-            - create_and_deploy_front_end
+      # - create_and_deploy_front_end
+      # - promote_to_production:
+      #     requires:
+      #       - create_and_deploy_front_end
       - get_last_deployment_id
       - clean_up_old_front_end:
           requires:
-            - create_and_deploy_front_end
-            - promote_to_production
+            - get_last_deployment_id
+            # - create_and_deploy_front_end
+            # - promote_to_production
