@@ -74,7 +74,7 @@ jobs:
       - run: cat ~/piplineId.txt
       - run:
           name: Destroy the previous S3 bucket and CloudFormation stack.
-          command:
+          command: |
             export OldBucketID=$(cat ~/piplineId.txt)
             aws s3 rm "s3://${OldBucketID}" --recursive
 
