@@ -25,7 +25,42 @@ jobs:
       - run: aws s3 sync . s3://uda-people-${CIRCLE_WORKFLOW_ID:0:7} --delete
       - destroy-infrastructure:
           stackName: stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
+
+  get_last_deployment_id:
+    docker:
+      - image: amazon/aws-
+    steps:
+      - run:
+          name: get last deployment id from cloudfront
+          command: |
+            aws cloudformation \
+              list-exports --query "Exports[?Name==\`PipelineID\`].Value" \
+              --no-paginate --output text > ~/piplineId.txt
+
+      - persist_to_workspace:
+          root: ~/
+          paths: piplineId.txt
+
+      - destroy-infrastructure:
+          stackName: stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
+
+  promote_to_production:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Execute cloudfront.yml
+          command: |
+            aws cloudformation deploy \
+              --template-file cloudfront.yml \
+              --stack-name production-distro \
+              --parameter-overrides PipelineID="stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}"
+
 workflows:
   createAndDeployFrontend:
     jobs:
-      - create_and_deploy_front_end
+      - create_and_deploy_front_end:
+      - promote_to_production:
+          requires:
+            - create_and_deploy_front_end
