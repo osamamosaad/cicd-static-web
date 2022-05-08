@@ -54,9 +54,12 @@ jobs:
           name: Execute cloudfront.yml
           command: |
             aws cloudformation deploy \
-              --template-file cloudfront.yml \
+              --template-file .circleci/Build/cloudfront.yml \
               --stack-name production-distro \
               --parameter-overrides PipelineID="uda-people-${CIRCLE_WORKFLOW_ID:0:7}"
+
+      - destroy-infrastructure: # destroy s3 that created
+          stackName: stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
 
 workflows:
   createAndDeployFrontend:
